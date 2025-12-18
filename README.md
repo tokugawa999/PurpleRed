@@ -10,7 +10,7 @@ The protocol is a transparent financial system where investors, traffic affiliat
 
 ---
 
-## 👁️ Mechanics: God Plays Dice with Bitcoin
+## 👁️ Mechanics: Player Plays Dice with Bitcoin
 
 Forget rigged scripts and server-side RNGs. The outcome of every round is calculated using a 6-block hash from the Rootstock (RSK) network, anchored by Bitcoin's miners.
 
