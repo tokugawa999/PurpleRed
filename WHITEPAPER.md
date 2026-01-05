@@ -101,7 +101,7 @@ The vault operates as an ERC-4626 compliant yield-bearing asset, enabling compos
 2. **Liquidity Lock**: Vault locks potential payout amount
 3. **Batch Accumulation**: Up to 99 bets aggregate into single round
 4. **Round Close**: Anyone can trigger close after minimum duration
-5. **Entropy Generation**: 6-block delay, then blockhash-derived result
+5. **Entropy Generation**: FORTRESS 12-block delay, then blockhash-derived result
 6. **Settlement**: Anyone can trigger; winners credited, fees distributed
 7. **Claim**: Players withdraw winnings via pull-payment pattern
 
@@ -127,16 +127,19 @@ The LP fee remains in the vault, increasing share value. Other fees are distribu
 
 ### 5.1 Entropy Generation
 
-We employ a commit-reveal scheme using future blockhashes:
+We employ the FORTRESS (Fully On-chain Randomness Through RSK's Entropy from Sequential Samples) scheme using 12 blocks of Bitcoin-secured entropy:
 
 ```
+accumulatedEntropy = XOR(blockhash[bet+1..bet+4])  // 4 blocks during betting
+gapEntropy = blockhash[closeBlock]                 // 1 gap block
+bufferEntropy = XOR(blockhash[close+7..close+11])  // 5 buffer blocks
+closeSeed = blockhash[closeBlock]                  // Croupier commitment
+
 result = keccak256(
-    blockhash(commitBlock + 1),
-    blockhash(commitBlock + 2),
-    blockhash(commitBlock + 3),
-    blockhash(commitBlock + 4),
-    blockhash(commitBlock + 5),
-    blockhash(commitBlock + 6),
+    accumulatedEntropy,
+    gapEntropy,
+    bufferEntropy,
+    closeSeed,
     roundId
 ) mod 37
 ```
@@ -147,20 +150,20 @@ result = keccak256(
 
 *Proof*: The result depends on blockhashes that do not exist at bet time. Blockhash is the hash of all transactions in a block plus the previous blockhash, forming a cryptographic commitment that cannot be predicted without controlling block production.
 
-**Theorem 2 (Non-Manipulation)**: For manipulation to be profitable, an attacker must control block production for 6 consecutive blocks.
+**Theorem 2 (Non-Manipulation)**: For manipulation to be profitable, an attacker must control block production for 12 consecutive blocks.
 
-*Proof*: The entropy combines 6 sequential blockhashes. Manipulating the result requires reordering or withholding blocks. On RSK (merge-mined with Bitcoin), the cost of controlling 6 blocks exceeds any possible payout:
+*Proof*: The entropy combines 12 sequential blockhashes through FORTRESS. Manipulating the result requires reordering or withholding blocks. On RSK (merge-mined with Bitcoin), the cost of controlling 12 blocks exceeds any possible payout:
 
-$$C_{attack} = 6 \times BlockReward \times OpportunityCost \approx \$2.4M$$
+$$C_{attack} = 12 \times BlockReward \times OpportunityCost \approx \$4.8M$$
 
 Maximum bet payout is capped at 2% of TVL, making attacks economically irrational for any realistic TVL.
 
 ### 5.3 Verifiability
 
 Any observer can verify results by:
-1. Retrieving `commitBlock` from settlement transaction
-2. Querying blockhashes for blocks +1 through +6
-3. Computing `keccak256` hash
+1. Retrieving bet blocks and close block from settlement transaction
+2. Querying blockhashes for all 12 FORTRESS entropy blocks
+3. Computing the combined `keccak256` hash
 4. Confirming `result = hash mod 37`
 
 This verification requires no special access—only a blockchain node.
@@ -293,7 +296,7 @@ These effects create defensible advantages that compound over time.
 Front-running is mitigated through:
 
 1. **Batch Processing**: Multiple bets share one random result
-2. **Commit-Reveal Delay**: 6 blocks between close and settlement
+2. **FORTRESS Delay**: 12 blocks of Bitcoin-secured entropy between bet and settlement
 3. **No Ordering Advantage**: Result is deterministic once committed
 
 ### 8.2 Griefing Prevention
@@ -398,8 +401,8 @@ The house always wins. Now, the house is a smart contract—and anyone can own a
 
 ---
 
-**Protocol Version**: 9.9.9  
-**Network**: Rootstock (RSK)  
-**License**: MIT  
+**Protocol Version**: 7.7.7
+**Network**: Rootstock (RSK)
+**License**: Proprietary  
 
 *The code is the law. The math is the proof. The future is permissionless.*
